@@ -1,210 +1,29 @@
 import os
-import re
-import time
-from typing import List, Dict, Any, Tuple
-
 import streamlit as st
-import fitz  # pymupdf
-import chromadb
-from chromadb.config import Settings
 from openai import OpenAI
 
-# ----------------------------
-# Streamlit page config
-# ----------------------------
-st.set_page_config(page_title="ClinicOps Copilot", page_icon="🩺", layout="wide")
-st.title("🩺 ClinicOps Copilot — Ask My Clinic Docs")
-st.caption("Upload clinic PDFs (SOPs, consent forms, aftercare, pricing). Ask questions. Answers include page citations.")
-
-# ----------------------------
-# OpenAI key (Streamlit secrets first)
-# ----------------------------
-api_key = None
-if "OPENAI_API_KEY" in st.secrets:
-    api_key = st.secrets["OPENAI_API_KEY"]
-else:
+# --- Load key from Streamlit Secrets first, then env ---
+api_key = st.secrets.get("OPENAI_API_KEY", None)
+if not api_key:
     api_key = os.getenv("OPENAI_API_KEY")
 
+# --- Clean the key (removes hidden newline/spaces) ---
+if api_key:
+    api_key = api_key.strip().replace("\n", "").replace("\r", "")
+
+# --- Safe debug (does NOT show the key) ---
+st.sidebar.caption(f"✅ Key loaded: {bool(api_key)} | Length: {len(api_key) if api_key else 0}")
+
 if not api_key:
-    st.error("OPENAI_API_KEY not found. Add it in Streamlit Cloud → App → Settings → Secrets.")
+    st.error("OPENAI_API_KEY missing. Go to Manage app → Settings → Secrets and set it.")
     st.stop()
 
 client = OpenAI(api_key=api_key)
 
-# ----------------------------
-# Chroma local persistent db (Cloud may reset occasionally — OK for MVP demo)
-# ----------------------------
-CHROMA_DIR = os.path.join(os.getcwd(), "data", "chroma")
-os.makedirs(CHROMA_DIR, exist_ok=True)
-
-chroma_client = chromadb.PersistentClient(
-    path=CHROMA_DIR,
-    settings=Settings(anonymized_telemetry=False),
-)
-
-COLLECTION_NAME = "clinic_docs"
-collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME)
-
-
-def clean_text(text: str) -> str:
-    return re.sub(r"\s+", " ", (text or "")).strip()
-
-
-def extract_pdf_pages_from_bytes(pdf_bytes: bytes) -> List[Dict[str, Any]]:
-    """Return list of {page_num (1-based), text}."""
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    pages = []
-    for i in range(len(doc)):
-        page = doc[i]
-        txt = clean_text(page.get_text("text"))
-        if txt:
-            pages.append({"page_num": i + 1, "text": txt})
-    doc.close()
-    return pages
-
-
-def chunk_text(text: str, chunk_size: int = 900, overlap: int = 150) -> List[str]:
-    """Simple char-based chunking for MVP."""
-    if len(text) <= chunk_size:
-        return [text]
-    chunks, start = [], 0
-    while start < len(text):
-        end = min(start + chunk_size, len(text))
-        chunks.append(text[start:end])
-        if end == len(text):
-            break
-        start = max(0, end - overlap)
-    return chunks
-
-
-def embed_texts(texts: List[str], model: str = "text-embedding-3-small") -> List[List[float]]:
-    resp = client.embeddings.create(model=model, input=texts)
-    return [d.embedding for d in resp.data]
-
-
-def upsert_pdf_bytes(pdf_bytes: bytes, source_name: str) -> int:
-    """Parse PDF -> chunks -> embeddings -> upsert into Chroma with metadata (source, page)."""
-    pages = extract_pdf_pages_from_bytes(pdf_bytes)
-    ids, docs, metas = [], [], []
-
-    for p in pages:
-        page_num = p["page_num"]
-        for idx, chunk in enumerate(chunk_text(p["text"])):
-            chunk_id = f"{source_name}|p{page_num}|c{idx}"
-            ids.append(chunk_id)
-            docs.append(chunk)
-            metas.append({"source": source_name, "page": page_num})
-
-    if not docs:
-        return 0
-
-    embeddings = embed_texts(docs)
-    collection.upsert(ids=ids, documents=docs, embeddings=embeddings, metadatas=metas)
-    return len(docs)
-
-
-def retrieve(query: str, k: int = 8) -> Tuple[List[str], List[Dict[str, Any]], List[float]]:
-    q_emb = embed_texts([query])[0]
-    res = collection.query(query_embeddings=[q_emb], n_results=k, include=["documents", "metadatas", "distances"])
-    return res["documents"][0], res["metadatas"][0], res["distances"][0]
-
-
-def build_context(docs: List[str], metas: List[Dict[str, Any]]) -> str:
-    blocks = []
-    for i, (d, m) in enumerate(zip(docs, metas), start=1):
-        blocks.append(f"[{i}] SOURCE: {m.get('source')} | PAGE: {m.get('page')}\n{d}")
-    return "\n\n".join(blocks)
-
-
-def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]:
-    docs, metas, dists = retrieve(question, k=8)
-
-    if not docs or all((d is None or len(d.strip()) < 40) for d in docs):
-        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
-
-    # Deduplicate citations from retrieved metadata
-    citations, seen = [], set()
-    for m in metas:
-        key = (m.get("source"), m.get("page"))
-        if key not in seen:
-            seen.add(key)
-            citations.append({"source": key[0], "page": key[1]})
-
-    if len(citations) < min_sources:
-        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
-
-    context = build_context(docs, metas)
-
-    system = (
-        "You are ClinicOps Copilot. You must answer ONLY using the provided context from clinic documents.\n"
-        "Rules:\n"
-        "1) If context is insufficient, say: \"I couldn’t find that in the uploaded clinic documents.\"\n"
-        "2) Do not guess or use outside knowledge.\n"
-        "3) Keep it clinic-friendly: short, clear, bullet points if helpful.\n"
-    )
-
-    user = (
-        f"QUESTION:\n{question}\n\n"
-        f"CONTEXT (use this only):\n{context}\n"
-    )
-
-    chat = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-        temperature=0.2,
-    )
-
-    answer_text = chat.choices[0].message.content.strip()
-
-    return {"answer": answer_text, "citations": citations[:6], "refused": False}
-
-
-# ----------------------------
-# Sidebar: Upload & Index
-# ----------------------------
-with st.sidebar:
-    st.header("1) Upload clinic PDFs")
-    uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
-
-    if uploaded_files and st.button("Index documents"):
-        with st.spinner("Indexing PDFs into the knowledge base..."):
-            total_chunks = 0
-            for f in uploaded_files:
-                pdf_bytes = f.getvalue()
-                total_chunks += upsert_pdf_bytes(pdf_bytes, source_name=f.name)
-            st.success(f"Indexed approx {total_chunks} chunks ✅")
-
-st.divider()
-
-# ----------------------------
-# Main: Ask questions
-# ----------------------------
-st.subheader("2) Ask a question")
-question = st.text_input(
-    "Example: 'What is the aftercare advice for chemical peel?' or 'What are laser contraindications?'",
-    placeholder="Type your question…",
-)
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-if st.button("Ask"):
-    if not question.strip():
-        st.warning("Type a question first.")
-    else:
-        start = time.time()
-        result = answer_with_citations(question.strip())
-        ms = (time.time() - start) * 1000
-        st.session_state.history.insert(0, {"q": question, "result": result, "ms": ms})
-
-for item in st.session_state.history[:10]:
-    st.markdown(f"### Q: {item['q']}")
-    st.write(item["result"]["answer"])
-    st.caption(f"Latency: {item['ms']:.0f} ms")
-
-    if item["result"]["citations"]:
-        st.markdown("**Citations (from retrieved chunks):**")
-        for c in item["result"]["citations"]:
-            st.write(f"- {c['source']} p.{c['page']}")
-
-    st.divider()
+# --- Quick auth test (will give clearer error) ---
+try:
+    client.models.list()
+except Exception as e:
+    st.error("❌ OpenAI auth failed. Your API key is missing/invalid or not applied yet.")
+    st.code(str(e))
+    st.stop()
