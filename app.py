@@ -21,7 +21,7 @@ st.caption("Upload clinic PDFs (SOPs, consent forms, aftercare, pricing). Ask qu
 # ----------------------------
 api_key = None
 if "OPENAI_API_KEY" in st.secrets:
-    api_key = st.secrets["OPENAI_API_KEY"]
+    api_key = st.secrets["DJR4vSv1hUmP4LCMbx9kfcNCHWwi8xY5NmJWybOLhtcZIEcyjLqIWMJQSfK_G0JoWEZgvpktAiT3BlbkFJe-EnD8EJ-"]
 else:
     api_key = os.getenv("OPENAI_API_KEY")
 
