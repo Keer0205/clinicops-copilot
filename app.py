@@ -17,7 +17,9 @@ REFUSAL_TEXT = "I couldn’t find that in the uploaded clinic documents."
 st.set_page_config(page_title="ClinicOps Copilot", page_icon="🩺", layout="wide")
 st.title("🩺 ClinicOps Copilot — Ask My Clinic Docs")
 st.caption("Upload clinic PDFs (SOPs, consent forms, aftercare, pricing). Ask questions. Answers include page citations.")
-
+st.success("✅ Demo ready: Upload clinic PDFs and ask questions. Answers include page citations.")
+st.caption("Disclaimer: This assistant answers ONLY from the uploaded clinic documents. If it’s not in the PDFs, it will refuse.")
+st.caption("Want this for your clinic? DM **CLINICOPS** for a setup call + trial.")
 # ----------------------------
 # Day 2: session status
 # ----------------------------
