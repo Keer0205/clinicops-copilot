@@ -23,6 +23,8 @@ if "indexed_chunks" not in st.session_state:
     st.session_state.indexed_chunks = 0
 if "last_indexed_at" not in st.session_state:
     st.session_state.last_indexed_at = None
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 status_left, status_right = st.columns(2)
 with status_left:
@@ -124,12 +126,12 @@ def build_context(docs: List[str], metas: List[Dict[str, Any]]) -> str:
 def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]:
     docs, metas = retrieve(question, k=8)
 
-    # Hard refuse if retrieval is empty/weak
+    # Day 3: Hard refuse if retrieval is empty/weak
     if not docs or not metas:
-        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": []}
+        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
     if len(docs[0].strip()) < 80:
-       return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
-        
+        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
+
     citations, seen = [], set()
     for m in metas:
         key = (m.get("source"), m.get("page"))
@@ -157,7 +159,7 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
         temperature=0.2,
     )
 
-   return {"answer": chat.choices[0].message.content.strip(), "citations": citations[:6], "refused": False}
+    return {"answer": chat.choices[0].message.content.strip(), "citations": citations[:6], "refused": False}
 
 
 # ----------------------------
@@ -179,6 +181,7 @@ with st.sidebar:
         collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME)
         st.session_state.indexed_chunks = 0
         st.session_state.last_indexed_at = None
+        st.session_state.history = []
         st.success("Cleared database ✅")
 
     if uploaded_files and do_index:
@@ -199,9 +202,6 @@ st.divider()
 st.subheader("2) Ask a question")
 question = st.text_input("Type your question…", placeholder="e.g., What is the cancellation policy?")
 
-if "history" not in st.session_state:
-    st.session_state.history = []
-
 if st.button("Ask"):
     if not question.strip():
         st.warning("Type a question first.")
@@ -216,8 +216,10 @@ for item in st.session_state.history[:10]:
     st.write(item["result"]["answer"])
     st.caption(f"Latency: {item['ms']:.0f} ms")
 
+    # Day 3: hide citations on refusal
     if (not item["result"].get("refused", False)) and item["result"].get("citations"):
         st.markdown("**Citations:**")
         for c in item["result"]["citations"]:
             st.write(f"- {c['source']} p.{c['page']}")
+
     st.divider()
