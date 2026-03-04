@@ -9,6 +9,8 @@ import chromadb
 from chromadb.config import Settings
 from openai import OpenAI
 
+REFUSAL_TEXT = "I couldn’t find that in the uploaded clinic documents."
+
 # ----------------------------
 # Page
 # ----------------------------
@@ -126,11 +128,11 @@ def build_context(docs: List[str], metas: List[Dict[str, Any]]) -> str:
 def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]:
     docs, metas = retrieve(question, k=8)
 
-    # Day 3: Hard refuse if retrieval is empty/weak
+    # Hard refuse if retrieval is empty/weak
     if not docs or not metas:
-        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
+        return {"answer": REFUSAL_TEXT, "citations": [], "refused": True}
     if len(docs[0].strip()) < 80:
-        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
+        return {"answer": REFUSAL_TEXT, "citations": [], "refused": True}
 
     citations, seen = [], set()
     for m in metas:
@@ -139,15 +141,14 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
             seen.add(key)
             citations.append({"source": key[0], "page": key[1]})
 
-    # If too few sources, refuse (and force citations empty)
     if len(citations) < min_sources:
-        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
+        return {"answer": REFUSAL_TEXT, "citations": [], "refused": True}
 
     context = build_context(docs, metas)
 
     system = (
         "You are ClinicOps Copilot. Answer ONLY using the provided context from clinic documents. "
-        "If context is insufficient, say: \"I couldn’t find that in the uploaded clinic documents.\" "
+        f"If context is insufficient, say: \"{REFUSAL_TEXT}\" "
         "Do not guess."
     )
 
@@ -161,11 +162,11 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
 
     answer_text = chat.choices[0].message.content.strip()
 
-# If the model itself refuses, force no citations
-if "I couldn’t find that in the uploaded clinic documents" in answer_text:
-    return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
+    # If model refused, force no citations
+    if REFUSAL_TEXT in answer_text:
+        return {"answer": REFUSAL_TEXT, "citations": [], "refused": True}
 
-return {"answer": answer_text, "citations": citations[:6], "refused": False}
+    return {"answer": answer_text, "citations": citations[:6], "refused": False}
 
 
 # ----------------------------
@@ -222,7 +223,6 @@ for item in st.session_state.history[:10]:
     st.write(item["result"]["answer"])
     st.caption(f"Latency: {item['ms']:.0f} ms")
 
-    # Day 3: hide citations on refusal
     if (not item["result"].get("refused", False)) and item["result"].get("citations"):
         st.markdown("**Citations:**")
         for c in item["result"]["citations"]:
