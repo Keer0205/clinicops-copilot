@@ -157,7 +157,7 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
         temperature=0.2,
     )
 
-    return {"answer": chat.choices[0].message.content.strip(), "citations": citations[:6]}
+   return {"answer": chat.choices[0].message.content.strip(), "citations": citations[:6], "refused": False}
 
 
 # ----------------------------
