@@ -159,7 +159,13 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
         temperature=0.2,
     )
 
-    return {"answer": chat.choices[0].message.content.strip(), "citations": citations[:6], "refused": False}
+    answer_text = chat.choices[0].message.content.strip()
+
+# If the model itself refuses, force no citations
+if "I couldn’t find that in the uploaded clinic documents" in answer_text:
+    return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": [], "refused": True}
+
+return {"answer": answer_text, "citations": citations[:6], "refused": False}
 
 
 # ----------------------------
