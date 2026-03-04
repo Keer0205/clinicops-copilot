@@ -76,7 +76,7 @@ Answers include **page citations** so staff can verify quickly.
 <img width="1361" height="664" alt="image" src="https://github.com/user-attachments/assets/bd134116-c9bb-43c0-84f2-c72f68cac4d4" />
 
 
-## Demo questions (20)
+# Demo questions (20)
 1. What is the cancellation policy?
 2. What is the late arrival policy?
 3. Do you require a deposit for bookings?
