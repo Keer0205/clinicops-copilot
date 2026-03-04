@@ -277,13 +277,10 @@ if st.button("Ask"):
 })
 
 for item in st.session_state.history[:10]:
-    st.markdown(f"### Q: {item['q']}")
-    st.write(item["result"]["answer"])
-    st.caption(f"Latency: {item['ms']:.0f} ms")
+    st.markdown(f"### Q: {item.get('q','')}")
+    st.write(item.get("answer", ""))
+    st.caption(f"Latency: {float(item.get('ms', 0)):.0f} ms")
 
-    if (not item["result"].get("refused", False)) and item["result"].get("citations"):
-        st.markdown("**Citations:**")
-        for c in item["result"]["citations"]:
-            st.write(f"- {c['source']} p.{c['page']}")
-
+    if not item.get("refused", False) and item.get("citations_count", 0) > 0:
+        st.caption(f"Citations: {item.get('citations_count', 0)} sources")
     st.divider()
