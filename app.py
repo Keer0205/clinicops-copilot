@@ -175,6 +175,7 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
 # Sidebar: Upload & Index + Clear DB
 # ----------------------------
 with st.sidebar:
+    st.info("Tip: Upload only the 3 separate PDFs (not the combined pack) for cleaner citations.")
     st.header("1) Upload clinic PDFs")
     uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
