@@ -209,7 +209,27 @@ st.divider()
 # Main: Ask questions
 # ----------------------------
 st.subheader("2) Ask a question")
-question = st.text_input("Type your question…", placeholder="e.g., What is the cancellation policy?")
+st.markdown("**Try example questions:**")
+qcols = st.columns(3)
+
+examples = [
+    "What is the cancellation policy?",
+    "Is a patch test required for laser hair removal?",
+    "What should be avoided after a chemical peel for 7 days?",
+    "When can makeup be applied after microneedling?",
+    "What should be avoided after Botox?",
+    "What are urgent warning signs after dermal fillers?"
+]
+
+for i, ex in enumerate(examples):
+    if qcols[i % 3].button(ex, use_container_width=True):
+        st.session_state["prefill_q"] = ex
+
+question = st.text_input(
+    "Type your question…",
+    value=st.session_state.get("prefill_q", ""),
+    placeholder="e.g., What is the cancellation policy?"
+)
 
 if st.button("Ask"):
     if not question.strip():
