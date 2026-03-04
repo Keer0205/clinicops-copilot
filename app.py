@@ -278,6 +278,7 @@ if st.button("Ask"):
 
 for item in st.session_state.history[:10]:
     st.markdown(f"### Q: {item.get('q','')}")
+    st.caption(f"time: {item.get('ts','')}")
     st.write(item.get("answer", ""))
     st.caption(f"Latency: {float(item.get('ms', 0)):.0f} ms")
 
