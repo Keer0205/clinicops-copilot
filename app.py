@@ -239,7 +239,14 @@ if st.button("Ask"):
         start = time.time()
         result = answer_with_citations(question.strip())
         ms = (time.time() - start) * 1000
-        st.session_state.history.insert(0, {"q": question, "result": result, "ms": ms})
+        st.session_state.history.insert(0, {
+    "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+    "q": question,
+    "answer": result.get("answer", ""),
+    "refused": bool(result.get("refused", False)),
+    "citations_count": len(result.get("citations", []) or []),
+    "ms": float(ms),
+})
 
 for item in st.session_state.history[:10]:
     st.markdown(f"### Q: {item['q']}")
