@@ -216,7 +216,7 @@ for item in st.session_state.history[:10]:
     st.write(item["result"]["answer"])
     st.caption(f"Latency: {item['ms']:.0f} ms")
 
-    if item["result"]["citations"]:
+    if (not item["result"].get("refused", False)) and item["result"].get("citations"):
         st.markdown("**Citations:**")
         for c in item["result"]["citations"]:
             st.write(f"- {c['source']} p.{c['page']}")
