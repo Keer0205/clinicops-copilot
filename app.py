@@ -17,6 +17,20 @@ st.title("🩺 ClinicOps Copilot — Ask My Clinic Docs")
 st.caption("Upload clinic PDFs (SOPs, consent forms, aftercare, pricing). Ask questions. Answers include page citations.")
 
 # ----------------------------
+# Day 2: session status
+# ----------------------------
+if "indexed_chunks" not in st.session_state:
+    st.session_state.indexed_chunks = 0
+if "last_indexed_at" not in st.session_state:
+    st.session_state.last_indexed_at = None
+
+status_left, status_right = st.columns(2)
+with status_left:
+    st.info(f"Indexed chunks: {st.session_state.indexed_chunks}")
+with status_right:
+    st.info(f"Last indexed: {st.session_state.last_indexed_at or '—'}")
+
+# ----------------------------
 # OpenAI key (Secrets only)
 # ----------------------------
 api_key = st.secrets.get("OPENAI_API_KEY", None)
@@ -80,10 +94,11 @@ def upsert_pdf_bytes(pdf_bytes: bytes, source_name: str) -> int:
     ids, docs, metas = [], [], []
 
     for p in pages:
+        page_num = p["page_num"]
         for idx, chunk in enumerate(chunk_text(p["text"])):
-            ids.append(f"{source_name}|p{p['page_num']}|c{idx}")
+            ids.append(f"{source_name}|p{page_num}|c{idx}")
             docs.append(chunk)
-            metas.append({"source": source_name, "page": p["page_num"]})
+            metas.append({"source": source_name, "page": page_num})
 
     if not docs:
         return 0
@@ -142,17 +157,34 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
 
 
 # ----------------------------
-# Sidebar: Upload & Index
+# Sidebar: Upload & Index + Clear DB
 # ----------------------------
 with st.sidebar:
     st.header("1) Upload clinic PDFs")
     uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
-    if uploaded_files and st.button("Index documents"):
+    col_a, col_b = st.columns(2)
+    do_index = col_a.button("Index documents", use_container_width=True)
+    do_clear = col_b.button("Clear DB", use_container_width=True)
+
+    if do_clear:
+        try:
+            chroma_client.delete_collection(COLLECTION_NAME)
+        except Exception:
+            pass
+        collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME)
+        st.session_state.indexed_chunks = 0
+        st.session_state.last_indexed_at = None
+        st.success("Cleared database ✅")
+
+    if uploaded_files and do_index:
         with st.spinner("Indexing PDFs into the knowledge base..."):
             total_chunks = 0
             for f in uploaded_files:
                 total_chunks += upsert_pdf_bytes(f.getvalue(), source_name=f.name)
+
+            st.session_state.indexed_chunks = total_chunks
+            st.session_state.last_indexed_at = time.strftime("%Y-%m-%d %H:%M:%S")
             st.success(f"Indexed approx {total_chunks} chunks ✅")
 
 st.divider()
