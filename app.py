@@ -65,6 +65,31 @@ m1, m2, m3 = st.columns(3)
 m1.metric("Questions (this session)", f"{total_q}")
 m2.metric("Refusal rate", f"{refuse_rate:.0f}%")
 m3.metric("Latency p50 / p95", f"{(p50 or 0):.0f} / {(p95 or 0):.0f} ms")
+# ----------------------------
+# Day 6: Export session logs (CSV)
+# ----------------------------
+def _history_to_csv(rows):
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(["timestamp", "question", "latency_ms", "refused", "citations_count"])
+    for r in rows:
+       writer.writerow([
+    r.get("ts", ""),
+    r.get("q", ""),
+    str(int(float(r.get("ms", 0)))),
+    str(bool(r.get("refused", False))),
+    str(int(r.get("citations_count", 0))),
+])
+
+    return out.getvalue()
+
+csv_data = _history_to_csv(st.session_state.history)
+st.download_button(
+    "Download logs (CSV)",
+    data=csv_data,
+    file_name="clinicops_session_logs.csv",
+    mime="text/csv",
+)
 
 # ----------------------------
 # OpenAI key (Secrets only)
