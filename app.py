@@ -35,6 +35,34 @@ with status_left:
     st.info(f"Indexed chunks: {st.session_state.indexed_chunks}")
 with status_right:
     st.info(f"Last indexed: {st.session_state.last_indexed_at or '—'}")
+    # ----------------------------
+# Day 6: Monitoring (session metrics)
+# ----------------------------
+def _percentile(values, p):
+    if not values:
+        return None
+    xs = sorted(values)
+    k = (len(xs) - 1) * (p / 100.0)
+    f = int(k)
+    c = min(f + 1, len(xs) - 1)
+    if f == c:
+        return xs[f]
+    return xs[f] + (xs[c] - xs[f]) * (k - f)
+
+last_n = st.session_state.history[:20]
+latencies = [x.get("ms") for x in last_n if isinstance(x.get("ms"), (int, float))]
+
+total_q = len(st.session_state.history)
+refused_n = sum(1 for x in st.session_state.history if x.get("refused"))
+refuse_rate = (refused_n / total_q * 100.0) if total_q else 0.0
+
+p50 = _percentile(latencies, 50)
+p95 = _percentile(latencies, 95)
+
+m1, m2, m3 = st.columns(3)
+m1.metric("Questions (this session)", f"{total_q}")
+m2.metric("Refusal rate", f"{refuse_rate:.0f}%")
+m3.metric("Latency p50 / p95", f"{(p50 or 0):.0f} / {(p95 or 0):.0f} ms")
 
 # ----------------------------
 # OpenAI key (Secrets only)
