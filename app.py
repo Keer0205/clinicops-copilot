@@ -124,7 +124,10 @@ def build_context(docs: List[str], metas: List[Dict[str, Any]]) -> str:
 def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]:
     docs, metas = retrieve(question, k=8)
 
-    if not docs or all((d is None or len(d.strip()) < 40) for d in docs):
+    # Hard refuse if retrieval is empty/weak
+    if not docs or not metas:
+        return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": []}
+    if len(docs[0].strip()) < 80:
         return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": []}
 
     citations, seen = [], set()
@@ -134,6 +137,7 @@ def answer_with_citations(question: str, min_sources: int = 2) -> Dict[str, Any]
             seen.add(key)
             citations.append({"source": key[0], "page": key[1]})
 
+    # If too few sources, refuse (and force citations empty)
     if len(citations) < min_sources:
         return {"answer": "I couldn’t find that in the uploaded clinic documents.", "citations": []}
 
