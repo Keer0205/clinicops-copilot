@@ -13,7 +13,7 @@
   {"id":"A01","type":"in_docs","question":"What aftercare is recommended immediately after a chemical peel?"},
   {"id":"A02","type":"in_docs","question":"What sun protection advice is given after treatment?"},
   {"id":"A03","type":"in_docs","question":"When should a patient contact the clinic urgently after treatment?"},
-  {"id":"A04","type":"in_docs","question":"What are common side effects after laser hair removal?"},
+  {"id":"A04","type":"not_in_docs","question":"What are common side effects after laser hair removal?"},
   {"id":"A05","type":"in_docs","question":"What should patients avoid after microneedling?"},
   {"id":"A06","type":"in_docs","question":"How many hours should makeup be avoided after microneedling?"},
   {"id":"A07","type":"in_docs","question":"What activities should be avoided after treatment if skin is irritated?"},
