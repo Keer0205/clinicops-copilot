@@ -1,0 +1,5 @@
+{
+  "min_pass_rate": 0.9,
+  "min_citation_rate_in_docs": 0.9,
+  "min_refusal_rate_not_in_docs": 0.9
+}
