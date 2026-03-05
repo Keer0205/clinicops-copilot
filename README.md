@@ -1,82 +1,40 @@
-# clinicops-copilot
-ClinicOps Copilot: RAG ‘Ask My Clinic Docs’ assistant with citations + evaluation + monitoring (Streamlit + OpenAI).
 # ClinicOps Copilot — Ask My Clinic Docs (RAG with citations)
 
-A Streamlit app that lets an aesthetic clinic upload internal PDFs (SOPs, consent forms, aftercare, pricing) and ask questions.  
-The assistant answers **only from the uploaded documents** and returns **page citations**.
+ClinicOps Copilot is a Streamlit app that lets an aesthetic clinic upload internal PDFs (SOPs, consent forms, aftercare, pricing) and ask questions.  
+The assistant answers **only from the uploaded documents** and returns **page citations** so staff can verify quickly.
 
-# Live Demo
-- Streamlit app: (paste your Streamlit URL here)
+## Live Demo
+- Streamlit app: https://clinicops-copilot-e6vguughwvwnggjorv5jmy.streamlit.app
 
-# What it does
+## What it does
 - Upload multiple clinic PDFs
 - Index documents into a knowledge base
 - Ask questions and get answers grounded in the docs
 - Shows citations (source PDF + page)
 - Refuses when the answer is not found in the docs
 
-# Example Questions
+## Demo workflow
+1) Upload PDFs in the sidebar  
+2) Click **Index documents**  
+3) Ask a question (e.g., *“What is the cancellation policy?”*)  
+4) See answer + citations  
+
+## Example questions
 1. What is the cancellation policy?
 2. Is a patch test required for laser hair removal?
 3. After microneedling, when can makeup be applied?
 4. What should be avoided after a chemical peel for 7 days?
 5. What are urgent warning signs after dermal fillers?
 
-# Screenshots
-- Answer with citations  
-  (<img width="1176" height="664" alt="image" src="https://github.com/user-attachments/assets/b05bc1b3-337b-48ac-8619-c50537ec7bf7" />
-)
+## Screenshots
 
-- PDFs uploaded in sidebar  
-  (<img width="1365" height="708" alt="image" src="https://github.com/user-attachments/assets/6c318b60-f8ea-4c3a-9f02-055612ea36c9" />
-)
+### Answer with citations
+<img width="1170" height="678" alt="Answer with citations" src="https://github.com/user-attachments/assets/d34cc583-ec3c-4b69-8fe3-a9ea40ce15ce" />
 
-# Tech Stack
-- Streamlit
-- OpenAI (embeddings + chat)
-- ChromaDB (local vector store)
-- PyMuPDF (PDF text extraction)
+### PDFs uploaded in sidebar
+<img width="1361" height="664" alt="PDFs uploaded in sidebar" src="https://github.com/user-attachments/assets/bd134116-c9bb-43c0-84f2-c72f68cac4d4" />
 
-# Notes
-- API keys are stored in Streamlit Secrets (never committed to GitHub).
-- If a PDF is scanned (image-only), it may not extract text.
-
-# Safety tests (Not in docs)
-These questions should return: “I couldn’t find that in the uploaded clinic documents.”
-- Do you offer student discount?
-- What is your WhatsApp number?
-- Is parking free nearby?
-- Do you provide home service?
-- What brand of products do you use?
-
-- # ClinicOps Copilot — Ask My Clinic Docs
-
-A Streamlit demo app that lets aesthetic clinics upload SOPs / policies / aftercare PDFs and ask questions.  
-Answers include **page citations** so staff can verify quickly.
-
-# What it does
-- Upload clinic PDFs (Policies, Contraindications, Aftercare)
-- Click **Index documents**
-- Ask questions
-- Get answers with **citations (PDF + page number)**
-- Safe refusal when info isn’t in the docs
-
-# Demo workflow
-1) Upload PDFs in the sidebar  
-2) Click **Index documents**  
-3) Ask a question (e.g., *“What is the cancellation policy?”*)  
-4) See answer + citations
-
-# Screenshots
-# Answer with citations
-<img width="1170" height="678" alt="image" src="https://github.com/user-attachments/assets/d34cc583-ec3c-4b69-8fe3-a9ea40ce15ce" />
-
-
-# PDFs uploaded in sidebar
-<img width="1361" height="664" alt="image" src="https://github.com/user-attachments/assets/bd134116-c9bb-43c0-84f2-c72f68cac4d4" />
-
-
-# Demo questions (20)
+## Demo questions (20)
 1. What is the cancellation policy?
 2. What is the late arrival policy?
 3. Do you require a deposit for bookings?
@@ -98,22 +56,36 @@ Answers include **page citations** so staff can verify quickly.
 19. What are urgent warning signs after dermal fillers?
 20. When should a patient contact the clinic urgently after treatment?
 
-# Safety tests (Not in docs)
-These questions should return: “I couldn’t find that in the uploaded clinic documents.”
+## Safety tests (Not in docs)
+These questions should return: **“I couldn’t find that in the uploaded clinic documents.”**
 - Do you offer student discount?
 - What is your WhatsApp number?
 - Is parking free nearby?
 - Do you provide home service?
 - What brand of products do you use?
 
-# Tech stack
+## Tech stack
 - Streamlit
 - OpenAI (embeddings + chat)
 - ChromaDB (local vector store)
 - PyMuPDF (PDF text extraction)
 
-# Notes
+## Notes
 - API keys are stored in **Streamlit Secrets** (never committed to GitHub).
 - If a PDF is scanned (image-only), it may not extract text.
-  
 
+## Regression proof (Quality Gate)
+
+We run `eval_questions.json` in the Streamlit **Eval mode** and compute:
+- **pass_rate**
+- **citation_rate_in_docs**
+- **refusal_rate_not_in_docs**
+
+### Thresholds (must meet all)
+Minimum thresholds are stored in `quality_gate.json`:
+- pass_rate ≥ 90%
+- citation_rate_in_docs ≥ 90%
+- refusal_rate_not_in_docs ≥ 90%
+
+### Baseline evidence
+- Baseline eval report: `eval_results/eval_baseline_2026-03-05.csv`
