@@ -23,6 +23,29 @@ st.success("✅ Demo ready: Upload clinic PDFs and ask questions. Answers includ
 st.caption("Disclaimer: This assistant answers ONLY from the uploaded clinic documents. If it’s not in the PDFs, it will refuse.")
 st.caption("Want this for your clinic? DM **CLINICOPS** for a setup call + trial.")
 # ----------------------------
+# Day 7: Shareable demo pitch (copy-friendly)
+# ----------------------------
+st.subheader("Share this demo")
+
+# Put your public Streamlit URL here once, then it stays (optional)
+default_url = st.secrets.get("APP_URL", "")
+demo_url = st.text_input("Demo URL (optional)", value=default_url, placeholder="https://<your-app>.streamlit.app")
+
+pitch = f"""Hi Doctor 👋
+I built a small assistant for clinics: **ClinicOps Copilot**.
+
+✅ Upload your clinic PDFs (SOPs, consent, aftercare, pricing)
+✅ Staff can ask questions and get answers with **page citations**
+✅ If it’s not in your documents, it **refuses** (no guessing)
+✅ Basic monitoring: p50/p95 latency + downloadable CSV logs
+
+Demo link: {demo_url if demo_url else "[paste demo link here]"}
+If you want, I can set this up for your clinic for a quick trial."""
+
+st.text_area("Copy message (WhatsApp/Email)", value=pitch, height=220)
+
+st.caption("Tip: Add APP_URL in Streamlit Secrets to prefill the demo link.")
+# ----------------------------
 # Day 2: session status
 # ----------------------------
 if "indexed_chunks" not in st.session_state:
