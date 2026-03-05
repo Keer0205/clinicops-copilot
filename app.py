@@ -353,13 +353,46 @@ if run_eval:
     st.info(f"Running eval on {len(qs)} questions…")
     results = []
     for q in qs:
-        question_text = q.get("question", "").strip()
-        qtype = q.get("type", "in_docs")
+        # q might be a dict {"id":..., "type":..., "question":...} OR just a string
+if isinstance(q, str):
+    question_text = q.strip()
+    q_id = ""
+    q_type = ""
+else:
+    question_text = str(q.get("question", "")).strip()
+    q_id = str(q.get("id", ""))
+    q_type = str(q.get("type", ""))
+        q_type = q.get("type", "in_docs")
         if not question_text:
             continue
 
-        start = time.time()
-        r = answer_with_citations(question_text)
+       
+       for q in qs:
+    if isinstance(q, str):
+        question_text = q.strip()
+        q_id = ""
+        q_type = ""
+    else:
+        question_text = str(q.get("question", "")).strip()
+        q_id = str(q.get("id", ""))
+        q_type = str(q.get("type", ""))
+
+    if not question_text:
+        continue
+
+    start = time.time()
+    r = answer_with_citations(question_text)
+    ms = (time.time() - start) * 1000
+
+    results.append({
+        "id": q_id,
+        "type": q_type,
+        "question": question_text,
+        "answer": r.get("answer", ""),
+        "refused": bool(r.get("refused", False)),
+        "citations_count": len(r.get("citations", []) or []),
+        "ms": float(ms),
+    })
         ms = (time.time() - start) * 1000
 
         citations_count = len(r.get("citations", []) or [])
