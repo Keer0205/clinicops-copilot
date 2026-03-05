@@ -6,6 +6,7 @@ import io
 from typing import List, Dict, Any, Tuple
 
 import streamlit as st
+import streamlit.components.v1 as components
 import fitz  # PyMuPDF
 import chromadb
 from chromadb.config import Settings
@@ -43,6 +44,33 @@ Demo link: {demo_url if demo_url else "[paste demo link here]"}
 If you want, I can set this up for your clinic for a quick trial."""
 
 st.text_area("Copy message (WhatsApp/Email)", value=pitch, height=220)
+safe_pitch = pitch.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+components.html(
+    f"""
+    <button id="copybtn" style="padding:8px 12px; border-radius:8px; border:1px solid #ddd; cursor:pointer;">
+      Copy message to clipboard
+    </button>
+    <span id="copystatus" style="margin-left:10px; color:#2e7d32;"></span>
+
+    <textarea id="pitch" style="position:absolute; left:-9999px;">{safe_pitch}</textarea>
+
+    <script>
+      const btn = document.getElementById("copybtn");
+      const txt = document.getElementById("pitch");
+      const status = document.getElementById("copystatus");
+      btn.onclick = async () => {{
+        try {{
+          await navigator.clipboard.writeText(txt.value);
+          status.textContent = "Copied ✅";
+          setTimeout(()=>status.textContent="", 2000);
+        }} catch (e) {{
+          status.textContent = "Copy failed — select & copy manually.";
+        }}
+      }}
+    </script>
+    """,
+    height=60,
+)
 
 st.caption("Tip: Add APP_URL in Streamlit Secrets to prefill the demo link.")
 # ----------------------------
