@@ -315,6 +315,104 @@ st.divider()
 # ----------------------------
 # Main: Ask questions
 # ----------------------------
+# ------------------------------
+# Day 8: Evaluation mode (run eval_questions.json)
+# ------------------------------
+import json
+
+st.subheader("✅ Eval mode (Day 8)")
+
+col_e1, col_e2, col_e3 = st.columns([1, 1, 2])
+with col_e1:
+    run_eval = st.button("Run eval (30 Qs)")
+with col_e2:
+    clear_eval = st.button("Clear eval results")
+with col_e3:
+    st.caption("Runs questions from eval_questions.json and reports citation/refusal rates.")
+
+if "eval_results" not in st.session_state:
+    st.session_state.eval_results = []
+
+if clear_eval:
+    st.session_state.eval_results = []
+    st.success("Eval results cleared.")
+
+def load_eval_questions(path="eval_questions.json"):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        st.error(f"Could not load {path}: {e}")
+        return []
+
+if run_eval:
+    qs = load_eval_questions()
+    if not qs:
+        st.stop()
+
+    st.info(f"Running eval on {len(qs)} questions…")
+    results = []
+    for q in qs:
+        question_text = q.get("question", "").strip()
+        qtype = q.get("type", "in_docs")
+        if not question_text:
+            continue
+
+        start = time.time()
+        r = answer_with_citations(question_text)
+        ms = (time.time() - start) * 1000
+
+        citations_count = len(r.get("citations", []) or [])
+        refused = bool(r.get("refused", False))
+
+        # scoring rules
+        if qtype == "in_docs":
+            passed = (not refused) and (citations_count > 0)
+        else:  # not_in_docs
+            passed = refused
+
+        results.append({
+            "id": q.get("id", ""),
+            "type": qtype,
+            "question": question_text,
+            "passed": passed,
+            "refused": refused,
+            "citations_count": citations_count,
+            "latency_ms": float(ms),
+        })
+
+    st.session_state.eval_results = results
+    st.success("Eval completed.")
+
+# Show eval summary + table
+if st.session_state.eval_results:
+    df = pd.DataFrame(st.session_state.eval_results)
+
+    total = len(df)
+    passed = int(df["passed"].sum())
+    pass_rate = (passed / total * 100.0) if total else 0.0
+
+    in_docs = df[df["type"] == "in_docs"]
+    not_in_docs = df[df["type"] == "not_in_docs"]
+
+    citation_rate = 0.0
+    if len(in_docs) > 0:
+        citation_rate = (in_docs["citations_count"].gt(0).sum() / len(in_docs) * 100.0)
+
+    refusal_rate_not_in_docs = 0.0
+    if len(not_in_docs) > 0:
+        refusal_rate_not_in_docs = (not_in_docs["refused"].sum() / len(not_in_docs) * 100.0)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Pass rate", f"{pass_rate:.0f}%")
+    c2.metric("Citation rate (in_docs)", f"{citation_rate:.0f}%")
+    c3.metric("Refusal rate (not_in_docs)", f"{refusal_rate_not_in_docs:.0f}%")
+
+    st.dataframe(df, use_container_width=True)
+
+    # Optional download
+    csv_bytes = df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download eval report (CSV)", data=csv_bytes, file_name="eval_report.csv", mime="text/csv")
 st.subheader("2) Ask a question")
 st.markdown("**Try example questions:**")
 qcols = st.columns(3)
