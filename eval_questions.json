@@ -1,0 +1,41 @@
+{
+  "questions": [
+    {"id":"P01","type":"in_docs","question":"What is the cancellation policy?"},
+    {"id":"P02","type":"in_docs","question":"What is the late arrival policy?"},
+    {"id":"P03","type":"in_docs","question":"Do you require a deposit for bookings?"},
+    {"id":"P04","type":"in_docs","question":"Are services refundable after they are delivered?"},
+    {"id":"P05","type":"in_docs","question":"Is a patch test required before laser hair removal?"},
+    {"id":"P06","type":"in_docs","question":"What should be avoided 24 hours before laser hair removal?"},
+    {"id":"P07","type":"in_docs","question":"What should be avoided after a chemical peel for 7 days?"},
+    {"id":"P08","type":"in_docs","question":"After microneedling, when can makeup be applied?"},
+    {"id":"P09","type":"in_docs","question":"What are urgent warning signs after dermal fillers?"},
+    {"id":"P10","type":"in_docs","question":"What should be avoided after Botox?"},
+
+    {"id":"A01","type":"in_docs","question":"What aftercare is recommended immediately after a chemical peel?"},
+    {"id":"A02","type":"in_docs","question":"What sun protection advice is given after treatment?"},
+    {"id":"A03","type":"in_docs","question":"When should a patient contact the clinic urgently after treatment?"},
+    {"id":"A04","type":"in_docs","question":"What are common side effects after laser hair removal?"},
+    {"id":"A05","type":"in_docs","question":"What should patients avoid after microneedling?"},
+    {"id":"A06","type":"in_docs","question":"How many hours should makeup be avoided after microneedling?"},
+    {"id":"A07","type":"in_docs","question":"What activities should be avoided after treatment if skin is irritated?"},
+    {"id":"A08","type":"in_docs","question":"What is the guidance about sweating/exercise after a peel?"},
+    {"id":"A09","type":"in_docs","question":"What is the guidance about exfoliation after a peel?"},
+    {"id":"A10","type":"in_docs","question":"What is the guidance about retinoids after a peel?"},
+
+    {"id":"S01","type":"in_docs","question":"Who should avoid laser hair removal (contraindications)?"},
+    {"id":"S02","type":"in_docs","question":"Is pregnancy/breastfeeding mentioned for treatment restrictions?"},
+    {"id":"S03","type":"in_docs","question":"What should a patient do if there is severe pain after fillers?"},
+    {"id":"S04","type":"in_docs","question":"What should a patient do if skin blanching occurs after fillers?"},
+    {"id":"S05","type":"in_docs","question":"What should be avoided after treatment regarding sunbeds/tanning?"},
+    {"id":"S06","type":"in_docs","question":"Is there a policy for no-shows?"},
+    {"id":"S07","type":"in_docs","question":"What payment methods are accepted?"},
+    {"id":"S08","type":"in_docs","question":"Can the clinic postpone treatment for safety reasons?"},
+    {"id":"S09","type":"in_docs","question":"When changing laser settings/areas, is a patch test required?"},
+    {"id":"S10","type":"in_docs","question":"How much notice is needed to reschedule or cancel?"},
+
+    {"id":"R01","type":"not_in_docs","question":"What is your WhatsApp number?"},
+    {"id":"R02","type":"not_in_docs","question":"Do you offer student discount?"},
+    {"id":"R03","type":"not_in_docs","question":"Is parking free nearby?"},
+    {"id":"R04","type":"not_in_docs","question":"Do you provide home service?"}
+  ]
+}
