@@ -1,1 +1,78 @@
+id,type,question,passed,refused,citations_count,latency_ms,answer
+P01,in_docs,What is the cancellation policy?,True,False,4,1783.7471961975098,"The cancellation policy states that you should give at least 24 hours’ notice to reschedule or cancel. Cancellations with less than 24 hours’ notice may result in deposit loss. Additionally, repeated late cancellations may require full prepayment for future bookings."
+P02,in_docs,What is the late arrival policy?,True,False,5,1824.9998092651367,"The late arrival policy states that if you arrive more than 10 minutes late, your appointment may be shortened to avoid delaying other patients. If you arrive more than 15 minutes late, you may need to reschedule, and fees may apply."
+P03,in_docs,Do you require a deposit for bookings?,True,False,3,1819.507122039795,"Yes, a deposit may be required for selected treatments and high-demand time slots. Deposits are deducted from the final bill on the day of treatment unless stated otherwise."
+P04,in_docs,Are services refundable after they are delivered?,True,False,4,1714.8120403289795,Services already delivered are non-refundable.
+P05,in_docs,Is a patch test required before laser hair removal?,True,False,5,1303.6229610443115,"Yes, a patch test is required before laser hair removal for new clients or when changing settings/areas, as advised by the practitioner."
+P06,in_docs,What should be avoided 24 hours before laser hair removal?,True,False,4,941.056489944458,"Avoid sun exposure and tanning for 2 weeks before laser hair removal. Additionally, do not use waxing or plucking methods for 4 weeks prior to the treatment."
+P07,in_docs,What should be avoided after a chemical peel for 7 days?,True,False,4,1429.8362731933594,"After a chemical peel, for 7 days, you should avoid the following:
 
+- Exfoliation
+- Scrubs
+- Acids (AHA/BHA)
+- Retinoids
+- Sunbeds and direct sun exposure
+- Heavy sweating"
+P08,in_docs,"After microneedling, when can makeup be applied?",True,False,4,840.5344486236572,Makeup should not be applied for the first 24 hours after microneedling.
+P09,in_docs,What are urgent warning signs after dermal fillers?,True,False,4,1646.0483074188232,"Urgent warning signs after dermal fillers include:
+
+- Severe swelling, rapidly increasing redness, fever
+- Severe pain, skin blanching/colour change
+- Vision changes, severe headache
+- Difficulty breathing, facial swelling, hives (allergic reaction)"
+P10,in_docs,What should be avoided after Botox?,True,False,4,1373.26979637146,"After Botox, you should avoid the following:
+
+- Touching or massaging the treated areas for the first 4 hours.
+- Heavy exercise, saunas, and alcohol for the first 24 hours.
+- Facial massages for the first 24 hours."
+A01,in_docs,What aftercare is recommended immediately after a chemical peel?,True,False,4,2729.5854091644287,"After a chemical peel, the recommended aftercare is as follows:
+
+- **First 24 hours**: Keep skin clean and moisturised; avoid makeup for 24 hours (or as advised).
+- **For 7 days**: Avoid exfoliation, scrubs, acids (AHA/BHA), retinoids; avoid sunbeds and direct sun; avoid heavy sweating.
+- **Peeling/flaking**: Do not pull skin; let it shed naturally; moisturise frequently.
+- **Contact the clinic if**: Severe swelling, pus, fever, or intense burning beyond expected."
+A02,in_docs,What sun protection advice is given after treatment?,True,False,3,2238.269805908203,"The sun protection advice given after treatment includes avoiding sun exposure and using SPF 30–50 daily. Additionally, no tanning beds should be used. For specific treatments like laser hair removal, it is advised to avoid sun/tanning for the first 3–7 days."
+A03,in_docs,When should a patient contact the clinic urgently after treatment?,True,False,5,1732.8484058380127,"A patient should contact the clinic urgently after treatment if they experience severe pain, spreading redness, fever, unusual symptoms, drooping eyelid, difficulty swallowing or breathing, severe swelling, rapidly increasing redness, skin blanching or color change, vision changes, severe headache, difficulty breathing, facial swelling, or hives."
+A04,not_in_docs,What are common side effects after laser hair removal?,True,True,0,761.0788345336914,I couldn’t find that in the uploaded clinic documents.
+A05,in_docs,What should patients avoid after microneedling?,True,False,4,1976.9835472106934,"Patients should avoid the following after microneedling:
+
+- **First 24 hours**: No makeup; avoid sweating/heat; keep hands off face; use gentle cleanser only.
+- **24–72 hours**: Avoid active skincare products (retinoids/acids/vitamin C) until irritation settles; use SPF daily."
+A06,in_docs,How many hours should makeup be avoided after microneedling?,True,False,4,1286.583423614502,Makeup should be avoided for the first 24 hours after microneedling.
+A07,in_docs,What activities should be avoided after treatment if skin is irritated?,True,False,4,3151.768922805786,"After treatment, if the skin is irritated, the following activities should be avoided:
+
+1. Heavy sweating, saunas, steam rooms, and very hot showers for 24–48 hours.
+2. Sun exposure; use SPF 30–50 daily and avoid tanning beds.
+3. Picking, scratching, or exfoliating treated areas.
+4. Using fragranced products if the skin is sensitive.
+5. Active skincare products like retinoids, acids, or vitamin C until irritation settles (specific to microneedling).
+6. Makeup for the first 24 hours (specific to microneedling and chemical peels).
+7. Heavy exercise, alcohol, and facial massages for specified periods after treatments like Botox and dermal fillers.
+
+If severe pain, spreading redness, fever, or unusual symptoms occur, contact the clinic."
+A08,in_docs,What is the guidance about sweating/exercise after a peel?,True,False,5,1315.0908946990967,"After a chemical peel, it is advised to avoid heavy sweating for 7 days. Additionally, for the first 24-48 hours, you should avoid heat, saunas, and very hot showers."
+A09,in_docs,What is the guidance about exfoliation after a peel?,True,False,5,1710.273265838623,"The guidance about exfoliation after a peel is to avoid exfoliation, scrubs, acids (AHA/BHA), and retinoids for 7 days following the treatment. Additionally, during the peeling or flaking process, do not pull at the skin; let it shed naturally and moisturise frequently."
+A10,in_docs,What is the guidance about retinoids after a peel?,True,False,4,1077.423095703125,The guidance about retinoids after a peel is to avoid them for 7 days following the procedure.
+S01,in_docs,Who should avoid laser hair removal (contraindications)?,True,False,5,3134.4809532165527,"The following individuals should avoid laser hair removal due to contraindications:
+
+1. Recent sunburn/tan or use of tanning products in the last 2 weeks (higher burn/pigment risk).
+2. Those taking photosensitising medications (e.g., some antibiotics) — clinician review required.
+3. Individuals with very light/blonde/grey/red hair, as they may respond poorly depending on the device.
+4. Those with an active infection, open wound, or inflamed rash in the area.
+5. Individuals with a history of seizures triggered by light (rare; clinician review).
+6. Those with uncontrolled diabetes or immune suppression (infection/healing risk).
+7. Recent isotretinoin use — clinician to confirm safe timing.
+8. Individuals with a history of keloids (risk assessment)."
+S02,in_docs,Is pregnancy/breastfeeding mentioned for treatment restrictions?,True,False,4,929.9936294555664,"Yes, pregnancy and breastfeeding are mentioned as treatment restrictions. They are typically avoided, and some treatments may be postponed during these periods."
+S03,in_docs,What should a patient do if there is severe pain after fillers?,True,False,4,1242.7000999450684,"If there is severe pain after fillers, the patient should contact the clinic immediately. Severe pain, along with blanching or color change of the skin, coldness in the skin, vision changes, or severe headache, are considered urgent signs that require prompt attention."
+S04,in_docs,What should a patient do if skin blanching occurs after fillers?,True,False,4,844.552755355835,"If skin blanching occurs after fillers, the patient should contact the clinic immediately, as it is considered a severe symptom that requires urgent attention."
+S05,in_docs,What should be avoided after treatment regarding sunbeds/tanning?,True,False,3,827.6963233947754,"After treatment, you should avoid sun exposure and tanning beds. It is recommended to use SPF 30–50 daily."
+S06,in_docs,Is there a policy for no-shows?,True,False,5,1752.2969245910645,"Yes, there is a no-show policy. No-shows may be charged a fee, and future bookings may require full prepayment after a no-show. If you are running late, it is advised to contact the clinic as soon as possible to avoid being marked as a no-show."
+S07,in_docs,What payment methods are accepted?,True,False,4,873.1865882873535,"The accepted payment methods are debit/credit card, bank transfer, and cash (where available)."
+S08,in_docs,Can the clinic postpone treatment for safety reasons?,True,False,4,1135.9314918518066,"Yes, the clinic can postpone treatment for safety reasons. For example, treatments may be postponed if there are concerns related to pregnancy, breastfeeding, or other medical conditions that affect safety."
+S09,in_docs,"When changing laser settings/areas, is a patch test required?",True,False,5,944.1666603088379,"Yes, a patch test is required before laser hair removal for new clients or when changing settings/areas, as advised by the practitioner."
+S10,in_docs,How much notice is needed to reschedule or cancel?,True,False,4,1364.6247386932373,You need to give at least 24 hours’ notice to reschedule or cancel an appointment. Cancellations with less than 24 hours’ notice may result in deposit loss.
+R01,not_in_docs,What is your WhatsApp number?,True,True,0,720.1704978942871,I couldn’t find that in the uploaded clinic documents.
+R02,not_in_docs,Do you offer student discount?,True,True,0,612.8015518188477,I couldn’t find that in the uploaded clinic documents.
+R03,not_in_docs,Is parking free nearby?,True,True,0,997.0016479492188,I couldn’t find that in the uploaded clinic documents.
+R04,not_in_docs,Do you provide home service?,True,True,0,708.5046768188477,I couldn’t find that in the uploaded clinic documents.
