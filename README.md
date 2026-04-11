@@ -66,7 +66,8 @@ ClinicOps Copilot allows users to:
 
 <img width="1365" height="613" alt="image" src="https://github.com/user-attachments/assets/cd0d5742-a185-4129-9061-ac81f1f0d228" />
 
-<img width="1365" height="594" alt="image" src="https://github.com/user-attachments/assets/093b9e44-dc7b-447c-b5c5-e75c011b487c" />
+<img width="1365" height="584" alt="image" src="https://github.com/user-attachments/assets/c772280a-5cf0-43e8-9b21-74900436f21a" />
+
 
 
 ## Key Features
