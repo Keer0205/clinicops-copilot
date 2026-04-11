@@ -1,119 +1,66 @@
-import os
-import json
+"""
+CI quality-gate evaluation script.
+
+Loads sample PDFs, indexes them into an ephemeral ChromaDB instance,
+runs eval_questions.json, and exits non-zero if any quality threshold is missed.
+
+Uses the same utils/ modules as app.py to guarantee consistent behaviour.
+
+Usage:
+    OPENAI_API_KEY=sk-... python scripts/ci_eval.py
+"""
+
+from __future__ import annotations
+
 import csv
+import json
+import os
 import sys
 import time
 from pathlib import Path
 
-import fitz  # PyMuPDF
+# ---------------------------------------------------------------------------
+# Make the repo root importable so `from utils.xxx import ...` works when
+# this script is executed from any directory.
+# ---------------------------------------------------------------------------
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
 import chromadb
+from openai import OpenAI
 
-REFUSAL_TEXT = "I couldn't find that in the uploaded clinic documents."
+from utils.embed import embed_texts, DEFAULT_EMBED_MODEL
+from utils.pdf import pdf_to_chunks
+from utils.retrieval import (
+    DEFAULT_CHAT_MODEL,
+    answer_with_citations,
+    reset_collection,
+)
 
-
-def get_openai_client():
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("ERROR: OPENAI_API_KEY is not set.")
-        sys.exit(2)
-
-    try:
-        from openai import OpenAI  # openai>=1.x
-        client = OpenAI(api_key=api_key)
-
-        def embed(texts, model):
-            resp = client.embeddings.create(model=model, input=texts)
-            return [d.embedding for d in resp.data]
-
-        def chat(messages, model):
-            resp = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0,
-            )
-            return resp.choices[0].message.content
-
-        return embed, chat
-
-    except Exception:
-        import openai  # openai<1.x
-        openai.api_key = api_key
-
-        def embed(texts, model):
-            resp = openai.Embedding.create(model=model, input=texts)
-            return [d["embedding"] for d in resp["data"]]
-
-        def chat(messages, model):
-            resp = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                temperature=0,
-            )
-            return resp["choices"][0]["message"]["content"]
-
-        return embed, chat
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+SAMPLE_DOCS_DIR = REPO_ROOT / "sample_docs"
+EVAL_Q_PATH = REPO_ROOT / "eval_questions.json"
+GATE_PATH = REPO_ROOT / "quality_gate.json"
+OUT_CSV = REPO_ROOT / "eval_results" / "ci_latest.csv"
+CHROMA_DIR = REPO_ROOT / ".ci_chroma"
 
 
-def chunk_text(text: str, max_chars: int = 1200):
-    text = " ".join(text.split())
-    if not text:
-        return []
-    chunks = []
-    i = 0
-    while i < len(text):
-        chunks.append(text[i : i + max_chars])
-        i += max_chars
-    return chunks
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-
-def load_pdf_chunks(pdf_path: Path):
-    doc = fitz.open(str(pdf_path))
-    out = []
-    for page_idx in range(len(doc)):
-        page = doc[page_idx]
-        txt = page.get_text("text").strip()
-        for chunk in chunk_text(txt):
-            out.append({"text": chunk, "source": pdf_path.name, "page": page_idx + 1})
-    return out
-
-
-def build_context(hits):
-    lines = []
-    for h in hits:
-        tag = f"[{h['source']} p{h['page']}]"
-        lines.append(f"{tag} {h['text']}")
-    return "\n\n".join(lines)
-
-
-def answer_question(question: str, hits, chat_fn, chat_model: str):
-    context = build_context(hits)
-
-    system = (
-        "You are ClinicOps Copilot. Answer ONLY using the provided clinic document excerpts. "
-        f"If the answer is not clearly present, reply exactly: '{REFUSAL_TEXT}'. "
-        "Do not guess. Keep the answer short and practical."
-    )
-    user = f"Question: {question}\n\nClinic document excerpts:\n{context}"
-
-    return chat_fn(
-        [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        chat_model,
-    )
-
-
-def load_eval_questions(path: Path):
+def load_eval_questions(path: Path) -> list[dict]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, dict):
         data = data.get("questions", [])
     if not isinstance(data, list):
-        raise ValueError("eval_questions.json must be a list (or {questions:[...]})")
+        raise ValueError("eval_questions.json must be a JSON array (or {questions: [...]}).")
     return data
 
 
-def load_quality_gate(path: Path):
+def load_quality_gate(path: Path) -> dict:
     gate = json.loads(path.read_text(encoding="utf-8"))
     return {
         "min_pass_rate": float(gate.get("min_pass_rate", 0.9)),
@@ -122,97 +69,87 @@ def load_quality_gate(path: Path):
     }
 
 
-def main():
-    repo_root = Path(__file__).resolve().parents[1]
-    sample_docs_dir = repo_root / "sample_docs"
-    eval_q_path = repo_root / "eval_questions.json"
-    gate_path = repo_root / "quality_gate.json"
-    out_csv = repo_root / "eval_results" / "ci_latest.csv"
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
-    if not sample_docs_dir.exists():
-        print("ERROR: sample_docs/ folder not found in repo.")
-        sys.exit(2)
-    if not eval_q_path.exists():
-        print("ERROR: eval_questions.json not found.")
-        sys.exit(2)
-    if not gate_path.exists():
-        print("ERROR: quality_gate.json not found.")
-        sys.exit(2)
+def main() -> None:
+    # --- Pre-flight checks ---------------------------------------------------
+    for label, path in [
+        ("sample_docs/", SAMPLE_DOCS_DIR),
+        ("eval_questions.json", EVAL_Q_PATH),
+        ("quality_gate.json", GATE_PATH),
+    ]:
+        if not path.exists():
+            print(f"ERROR: {label} not found at {path}")
+            sys.exit(2)
 
-    embed_fn, chat_fn = get_openai_client()
-    embed_model = os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
-    chat_model = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
-
-    questions = load_eval_questions(eval_q_path)
-    gate = load_quality_gate(gate_path)
-
-    chunks = []
-    pdfs = sorted(sample_docs_dir.glob("*.pdf"))
+    pdfs = sorted(SAMPLE_DOCS_DIR.glob("*.pdf"))
     if not pdfs:
-        print("ERROR: No PDFs found inside sample_docs/.")
+        print(f"ERROR: No PDFs found in {SAMPLE_DOCS_DIR}")
         sys.exit(2)
 
-    for pdf in pdfs:
-        chunks.extend(load_pdf_chunks(pdf))
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("ERROR: OPENAI_API_KEY environment variable is not set.")
+        sys.exit(2)
 
-    chroma_path = repo_root / ".ci_chroma"
-    client = chromadb.PersistentClient(path=str(chroma_path))
-    try:
-        client.delete_collection("clinic_docs")
-    except Exception:
-        pass
-    col = client.create_collection("clinic_docs", metadata={"hnsw:space": "cosine"})
+    embed_model = os.getenv("OPENAI_EMBED_MODEL", DEFAULT_EMBED_MODEL)
+    chat_model = os.getenv("OPENAI_CHAT_MODEL", DEFAULT_CHAT_MODEL)
 
-    texts = [c["text"] for c in chunks]
-    metadatas = [{"source": c["source"], "page": c["page"]} for c in chunks]
-    ids = [f"c{i}" for i in range(len(chunks))]
+    openai_client = OpenAI(api_key=api_key)
 
-    embeddings = []
-    batch_size = 64
-    for i in range(0, len(texts), batch_size):
-        embeddings.extend(embed_fn(texts[i : i + batch_size], embed_model))
+    # --- Build ephemeral ChromaDB from sample PDFs ---------------------------
+    chroma_client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    collection = reset_collection(chroma_client)
 
-    col.add(ids=ids, documents=texts, metadatas=metadatas, embeddings=embeddings)
+    all_chunks: list[dict] = []
+    for pdf_path in pdfs:
+        all_chunks.extend(pdf_to_chunks(pdf_path.read_bytes(), source_name=pdf_path.name))
 
-    rows = []
-    in_docs_total = 0
-    in_docs_with_cites = 0
-    not_in_docs_total = 0
-    not_in_docs_refused = 0
-    passed_total = 0
+    if not all_chunks:
+        print("ERROR: No text extracted from sample PDFs.")
+        sys.exit(2)
 
-    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Indexing {len(all_chunks)} chunks from {len(pdfs)} PDF(s)...")
+
+    texts = [c["text"] for c in all_chunks]
+    metadatas = [{"source": c["source"], "page": c["page"]} for c in all_chunks]
+    ids = [c["id"] for c in all_chunks]
+
+    # Embed in batches (handled inside embed_texts)
+    embeddings = embed_texts(texts, openai_client, embed_model)
+    collection.add(ids=ids, documents=texts, metadatas=metadatas, embeddings=embeddings)
+    print(f"Indexed {len(all_chunks)} chunks OK")
+
+    # --- Run eval questions --------------------------------------------------
+    questions = load_eval_questions(EVAL_Q_PATH)
+    gate = load_quality_gate(GATE_PATH)
+
+    rows: list[dict] = []
+    in_docs_total = in_docs_cited = not_in_docs_total = not_in_docs_refused = passed_total = 0
 
     for q in questions:
         qid = q.get("id", "")
-        qtype = q.get("type", "")
-        question = q.get("question", "")
+        qtype = q.get("type", "in_docs")
+        question = q.get("question", "").strip()
+        if not question:
+            continue
 
         t0 = time.time()
-
-        q_emb = embed_fn([question], embed_model)[0]
-        res = col.query(
-            query_embeddings=[q_emb],
-            n_results=4,
-            include=["documents", "metadatas", "distances"],
+        r = answer_with_citations(
+            question, collection, openai_client, embed_model, chat_model
         )
-
-        docs = res["documents"][0] if res.get("documents") else []
-        metas = res["metadatas"][0] if res.get("metadatas") else []
-
-        hits = [{"text": d, "source": m.get("source", ""), "page": m.get("page", "")} for d, m in zip(docs, metas)]
-
-        answer = answer_question(question, hits, chat_fn, chat_model).strip()
         latency_ms = (time.time() - t0) * 1000.0
 
-        refused = (answer == REFUSAL_TEXT) or (REFUSAL_TEXT.lower() in answer.lower())
-        citations_count = 0 if refused else len({(h["source"], h["page"]) for h in hits if h["source"]})
+        refused = bool(r.get("refused", False))
+        cites = int(r.get("citations_count", 0))
 
         if qtype == "in_docs":
             in_docs_total += 1
-            if citations_count > 0:
-                in_docs_with_cites += 1
-            passed = (not refused) and (citations_count > 0)
+            if cites > 0:
+                in_docs_cited += 1
+            passed = (not refused) and (cites > 0)
         else:
             not_in_docs_total += 1
             passed = refused
@@ -222,50 +159,59 @@ def main():
         if passed:
             passed_total += 1
 
-        rows.append(
-            {
-                "id": qid,
-                "type": qtype,
-                "question": question,
-                "passed": passed,
-                "refused": refused,
-                "citations_count": citations_count,
-                "latency_ms": round(latency_ms, 2),
-                "answer": answer,
-            }
-        )
+        rows.append({
+            "id": qid,
+            "type": qtype,
+            "question": question,
+            "passed": passed,
+            "refused": refused,
+            "citations_count": cites,
+            "latency_ms": round(latency_ms, 2),
+            "answer": r.get("answer", ""),
+        })
 
-    pass_rate = passed_total / max(1, len(questions))
-    citation_rate_in_docs = in_docs_with_cites / max(1, in_docs_total)
+    # --- Compute metrics -----------------------------------------------------
+    total_qs = max(1, len(rows))
+    pass_rate = passed_total / total_qs
+    citation_rate_in_docs = in_docs_cited / max(1, in_docs_total)
     refusal_rate_not_in_docs = not_in_docs_refused / max(1, not_in_docs_total)
 
-    with out_csv.open("w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(
-            f,
-            fieldnames=["id", "type", "question", "passed", "refused", "citations_count", "latency_ms", "answer"],
+    # --- Save CSV ------------------------------------------------------------
+    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+    with OUT_CSV.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=["id", "type", "question", "passed", "refused",
+                        "citations_count", "latency_ms", "answer"],
         )
-        w.writeheader()
-        w.writerows(rows)
+        writer.writeheader()
+        writer.writerows(rows)
 
-    print("CI Eval Summary")
-    print(f"pass_rate={pass_rate:.3f}")
-    print(f"citation_rate_in_docs={citation_rate_in_docs:.3f}")
-    print(f"refusal_rate_not_in_docs={refusal_rate_not_in_docs:.3f}")
-    print(f"Report saved: {out_csv}")
+    # --- Print summary -------------------------------------------------------
+    print("\n-- CI Eval Summary --")
+    print(f"  Total questions     : {total_qs}")
+    print(f"  Passed              : {passed_total}")
+    print(f"  pass_rate           : {pass_rate:.3f}  (threshold: {gate['min_pass_rate']})")
+    print(f"  citation_rate       : {citation_rate_in_docs:.3f}  (threshold: {gate['min_citation_rate_in_docs']})")
+    print(f"  refusal_rate_ood    : {refusal_rate_not_in_docs:.3f}  (threshold: {gate['min_refusal_rate_not_in_docs']})")
+    print(f"  Report saved to     : {OUT_CSV}")
 
-    failed = []
+    # --- Quality gate --------------------------------------------------------
+    failures = []
     if pass_rate < gate["min_pass_rate"]:
-        failed.append("pass_rate")
+        failures.append(f"pass_rate={pass_rate:.3f} < {gate['min_pass_rate']}")
     if citation_rate_in_docs < gate["min_citation_rate_in_docs"]:
-        failed.append("citation_rate_in_docs")
+        failures.append(f"citation_rate_in_docs={citation_rate_in_docs:.3f} < {gate['min_citation_rate_in_docs']}")
     if refusal_rate_not_in_docs < gate["min_refusal_rate_not_in_docs"]:
-        failed.append("refusal_rate_not_in_docs")
+        failures.append(f"refusal_rate_not_in_docs={refusal_rate_not_in_docs:.3f} < {gate['min_refusal_rate_not_in_docs']}")
 
-    if failed:
-        print(f"QUALITY GATE FAIL: {', '.join(failed)}")
+    if failures:
+        print("\nQUALITY GATE FAIL")
+        for f in failures:
+            print(f"  -> {f}")
         sys.exit(1)
 
-    print("QUALITY GATE PASS ✅")
+    print("\nQUALITY GATE PASS")
 
 
 if __name__ == "__main__":

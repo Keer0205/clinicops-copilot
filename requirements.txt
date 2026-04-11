@@ -1,5 +1,9 @@
-streamlit
-openai
-pymupdf
-chromadb
-tiktoken
+# ClinicOps Copilot — Python dependencies
+# Versions pinned to avoid breaking changes on fresh installs.
+# Run: pip install -r requirements.txt
+
+streamlit>=1.35.0,<2.0.0
+openai>=1.30.0,<2.0.0
+pymupdf>=1.24.0,<2.0.0
+chromadb>=0.5.0,<1.0.0
+pandas>=2.0.0,<3.0.0
