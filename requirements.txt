@@ -1,10 +1,7 @@
-# ClinicOps Copilot — Python dependencies
-# Versions pinned to avoid breaking changes on fresh installs.
-# Run: pip install -r requirements.txt
-
-streamlit>=1.35.0,<2.0.0
-openai>=1.30.0,<2.0.0
-pymupdf>=1.24.0,<2.0.0
+streamlit==1.35.0
+openai==1.30.0
+PyMuPDF==1.24.3
 chromadb==0.4.24
-numpy<2.0
-pandas>=2.0.0,<3.0.0
+numpy==1.26.4
+pandas==2.2.2
+protobuf==4.25.3
