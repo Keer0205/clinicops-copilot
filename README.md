@@ -64,6 +64,8 @@ ClinicOps Copilot allows users to:
 
 ---
 
+<img width="1365" height="613" alt="image" src="https://github.com/user-attachments/assets/cd0d5742-a185-4129-9061-ac81f1f0d228" />
+
 ## Key Features
 
 - Upload multiple clinic PDFs
