@@ -162,6 +162,7 @@ with st.sidebar:
         st.session_state.last_indexed_at = None
         st.session_state.history = []
         st.success("Cleared database ✅")
+        st.rerun()
 
     if uploaded_files and do_index:
         with st.spinner("Indexing PDFs into the knowledge base…"):
@@ -176,7 +177,9 @@ with st.sidebar:
                 )
             st.session_state.indexed_chunks = total_chunks
             st.session_state.last_indexed_at = time.strftime("%Y-%m-%d %H:%M:%S")
+            st.session_state.history = []
             st.success(f"Indexed {total_chunks} chunks ✅")
+            st.rerun()
 
 # ---------------------------------------------------------------------------
 # Eval mode
@@ -302,7 +305,6 @@ if st.button("Ask"):
     if not question.strip():
         st.warning("Type a question first.")
     else:
-        # Clear prefill so the box is empty on next interaction
         st.session_state.pop("prefill_q", None)
 
         with st.spinner("Searching clinic documents…"):
@@ -312,7 +314,6 @@ if st.button("Ask"):
             )
             ms = (time.time() - t0) * 1000.0
 
-        # Rolling window — keep at most 50 entries to avoid session bloat
         st.session_state.history.insert(0, {
             "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
             "q": question,
