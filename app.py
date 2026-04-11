@@ -85,9 +85,11 @@ if "eval_results" not in st.session_state:
 # ---------------------------------------------------------------------------
 # Status bar
 # ---------------------------------------------------------------------------
+current_chunk_count = collection.count()
+
 col_left, col_right = st.columns(2)
 with col_left:
-    st.info(f"Indexed chunks: {st.session_state.indexed_chunks}")
+    st.info(f"Indexed chunks: {current_chunk_count}")
 with col_right:
     st.info(f"Last indexed: {st.session_state.last_indexed_at or '—'}")
 
